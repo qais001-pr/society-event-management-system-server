@@ -10,6 +10,8 @@ const config = {
         trustServerCertificate: true // For local development
     }
 };
+
+
 async function connectionDb() {
     try {
         const pool = await mssql.connect(config);
