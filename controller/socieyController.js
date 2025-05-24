@@ -151,8 +151,18 @@ async function getSocietyEvent(req, res) {
     let pool;
     try {
         pool = await connectionDb();
-        const result = await pool.request().query`Select e.* from event_requisitions e join adeventreviews a on
-            e.event_requisition_id = a.event_id join staffhead s on s.eventid=e.event_requisition_id where a.status ='Approved' and s.status!='Approved''`
+        const result = await pool.request().query`
+SELECT e.* 
+FROM event_requisitions e
+JOIN adeventreviews a 
+  ON e.event_requisition_id = a.event_id
+WHERE a.status = 'Approved'
+  AND NOT EXISTS (
+    SELECT 1 
+    FROM staffhead s 
+    WHERE s.eventid = e.event_requisition_id
+  );
+`
         res.status(200).json({
             success: true,
             data: result.recordset
