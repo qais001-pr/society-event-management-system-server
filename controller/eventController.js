@@ -36,7 +36,7 @@ async function createEvents(req, res) {
             resources,
             submissiondate,
             notes,
-            selectedSociety,
+            society_id,
             user_id
         } = req.body;
         const status = 'Pending'
@@ -70,7 +70,7 @@ async function createEvents(req, res) {
                 ${approved_date},
                 ${rejection_date},
                 '${notes}',
-                ${selectedSociety},
+                ${society_id},
                 ${user_id}
             )
         `);
@@ -98,7 +98,7 @@ async function getEvent(req, res) {
         const response = await pool.request().query`SELECT * FROM event_requisitions where event_requisition_id=${parseInt(id)}`;
         res.status(200).json({
             success: true,
-            data: response.recordset[0]
+            data: response.recordset
         });
     } catch {
         res.status(500).json({
@@ -167,11 +167,29 @@ async function getEventsBySociety(req, res) {
 
 async function getEventsByStatus(req, res) {
     let pool;
+    let q = '';
     try {
         const { status } = req.params;
+        q = `SELECT * FROM event_requisitions WHERE status = '${status}' order by approved_date asc`
+        if (status === 'Rejected') {
+            q = `select 
+e.*,
+ar.status as [adstatus],
+sh.status as [staffheadstatus],
+it.STATUS as [itheadstatus]
+from event_requisitions e 
+LEFT JOIN adeventreviews ar ON ar.event_id = e.event_requisition_id
+LEFT JOIN staffhead sh ON sh.eventid = e.event_requisition_id
+LEFT JOIN ITHEAD it ON it.EVENTID = e.event_requisition_id
+WHERE e.status = 'Rejected' 
+or ar.status != 'Approved' 
+or sh.status !='Approved' 
+or it.status != 'Completed' ;`
+        }
+
         pool = await connectionDb();
         const response = await pool.request()
-            .query`SELECT * FROM event_requisitions WHERE status = ${status.toString()} order by approved_date asc`;
+            .query(q);
         res.status(200).json({
             success: true,
             data: response.recordset
@@ -188,6 +206,45 @@ async function getEventsByStatus(req, res) {
         }
     }
 }
+
+async function getRejectedEventsBySocietyID(req, res) {
+    let pool;
+    let q = '';
+    try {
+        const { id } = req.params;
+        console.log(id)
+        q = `select 
+                        e.*,
+                        ar.status as [adstatus],
+                        sh.status as [staffheadstatus],
+                        it.STATUS as [itheadstatus]
+                        from event_requisitions e 
+                        LEFT JOIN adeventreviews ar ON ar.event_id = e.event_requisition_id
+                        LEFT JOIN staffhead sh ON sh.eventid = e.event_requisition_id
+                        LEFT JOIN ITHEAD it ON it.EVENTID = e.event_requisition_id
+                        WHERE e.status = 'Rejected' 
+                        or ar.status != 'Approved' 
+                        or sh.status !='Approved' 
+                        or it.status != 'Completed' and e.society_id = ${id} ;`
+        pool = await connectionDb();
+        const response = await pool.request().query(q);
+        res.status(200).json({
+            success: true,
+            data: response.recordset
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+            data: []
+        });
+    } finally {
+        if (pool) {
+            await pool.close();
+        }
+    }
+}
+
 
 async function updateEventsByStatus(req, res) {
     let pool;
@@ -254,19 +311,16 @@ async function getEventsOnlyApproved(req, res) {
         pool = await connectionDb();
 
         const response = await pool.request().query`
-            SELECT e.* 
-            FROM event_requisitions e
+           SELECT e.*,aa.status as [aastatus] 
+            FROM event_requisitions e left join adeventreviews aa on aa.event_id=e.event_requisition_id
             WHERE e.status = 'Approved'
-            AND NOT EXISTS (
-                SELECT 1
+            AND not EXISTS (
+                SELECT a.status
                 FROM adeventreviews a
                 WHERE a.event_id = e.event_requisition_id
-                AND (a.status = 'Approved' OR a.status = 'Rejected')
+                AND (a.status = 'Approved' or a.status='Rejected')
             );
         `;
-
-        // Debug: log what was returned (optional)
-        console.log(`Fetched ${response.recordset.length} event(s).`);
 
         res.status(200).json({
             success: true,
@@ -276,7 +330,6 @@ async function getEventsOnlyApproved(req, res) {
         });
 
     } catch (err) {
-        console.error('Error fetching approved events without approved/rejected reviews:', err);
 
         res.status(500).json({
             success: false,
@@ -299,5 +352,6 @@ module.exports = {
     getEventsBySociety,
     getEventsByStatus,
     updateEventsByStatus,
-    getEventsOnlyApproved
+    getEventsOnlyApproved,
+    getRejectedEventsBySocietyID
 }

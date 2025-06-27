@@ -1,16 +1,20 @@
 const express = require('express')
-const staffRouter = express.Router();
+const itheadRouter = express.Router();
 
-const { getEvents,getEventsBySociety, approvalrejection } = require('../controller/itheadController')
+const { getPendingEventsApprovedByStaffhead, getCompletedEvents, getRejectedEvents, approvalrejection, } = require('../controller/itheadController')
 
-staffRouter.route('/')
-    .get(getEvents)
+itheadRouter.route('/pending')
+    .get(getPendingEventsApprovedByStaffhead)
 
-staffRouter.route('/:id')
-    .get(getEventsBySociety)
+itheadRouter.route('/completed')
+    .get(getCompletedEvents)
 
-staffRouter.route('/approvedrejected')
+itheadRouter.route('/rejected')
+    .get(getRejectedEvents)
+
+
+itheadRouter.route('/approvedrejected')
     .post(approvalrejection)
 
 
-module.exports = staffRouter;
+module.exports = itheadRouter;

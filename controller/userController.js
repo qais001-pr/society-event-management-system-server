@@ -1,11 +1,13 @@
 const { connectionDb } = require('../connectionDb')
+const sql = require('mssql');
+
 async function getUser(req, res) {
-    const { userid } = req.params; // Use req.params to get the id from the URL
-    console.log(userid); // Log the id to see if it's being captured correctly 
+    const { userid } = req.params;
+    console.log(userid);
     try {
         const pool = await connectionDb();
         console.log('Connected to the database');
-        const result = await pool.request().query`Select * from users where userid = ${parseInt(userid)}`; // Adjust the query as needed
+        const result = await pool.request().query`Select * from users where userid = ${parseInt(userid)}`;
         res.status(201).json(result.recordset);
     } catch (error) {
         console.error('Error executing query:', error);
@@ -28,29 +30,59 @@ async function getAllUsers(req, res) {
 }
 
 async function createUser(req, res) {
-    const { name, username, gender, contact, email, role, password } = req.body;
-    console.log(name);
-    console.log(username);
-    console.log(gender);
-    console.log(contact);
-    console.log(email);
-    console.log(role);
-    console.log(password);
-    // Check if the required fields are provided
+    const { name, username, gender, contact, email, role, password, societyid } = req.body;
+
+    console.log('Received:', { name, username, gender, contact, email, role, password, societyid });
+
     try {
         const pool = await connectionDb();
-        await pool.request().query`
-            INSERT INTO users
-            VALUES (${name}, ${username}, ${gender}, ${contact}, ${role}, ${email},
-            ${password})
-        `;
-        res.status(201).send('User created'); // Send a success response
-        console.log('User created successfully');
+
+        // ✅ 1) Check if username already exists
+        const usernameResult = await pool.request()
+            .input('username', sql.VarChar(100), username)
+            .query(`SELECT COUNT(*) as count FROM users WHERE username = @username`);
+
+        if (usernameResult.recordset[0].count > 0) {
+            return res.status(400).json({
+                status: 400,
+                message: 'Username already exists. Please choose a different username.'
+            });
+        }
+
+        // ✅ 2) Check if email already exists
+        const emailResult = await pool.request()
+            .input('email', sql.VarChar(255), email)
+            .query(`SELECT COUNT(*) as count FROM users WHERE email = @email`);
+
+        if (emailResult.recordset[0].count > 0) {
+            return res.status(400).json({
+                status: 400,
+                message: 'Email already exists. Please use a different email.'
+            });
+        }
+        await pool.request()
+            .input('name', sql.VarChar(200), name)
+            .input('username', sql.VarChar(100), username)
+            .input('gender', sql.VarChar(50), gender)
+            .input('contact', sql.VarChar(150), contact)
+            .input('roles', sql.VarChar(50), role)  
+            .input('email', sql.VarChar(255), email)
+            .input('password', sql.VarChar(255), password)  
+            .input('societyid', sql.Int, societyid)
+            .execute('insert_users');
+
+        console.log('User created successfully.');
+        res.status(201).json(
+            {
+                status: 201,
+                message: 'User created successfully.'
+            });
+
     } catch (err) {
-        console.error('❌ Error while creating employee:', err);
-        res.status(500).send('Server error');
+        res.status(500).send('Server error. Please try again later.');
     }
 }
+
 
 async function updateUser(req, res) {
     const { userid } = req.params;
@@ -84,7 +116,9 @@ async function loginUser(req, res) {
     try {
         const { email, password } = req.body;
         const pool = await connectionDb();
-        const result = await pool.request().query`select * from users where email = ${email} and password = ${password}`;
+        const result = await pool.request().query`select  u.*,s.society_id from users u
+        left join societychairpersons s on u.user_id = s.user_id
+        where email=${email} and password =${password}`;
         res.status(201).json({
             success: true,
             result: result.recordset
@@ -120,4 +154,3 @@ module.exports = {
     loginUser,
     forgotpassword
 }
-// Compare this snippet from app.js:

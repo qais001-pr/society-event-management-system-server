@@ -41,6 +41,59 @@ async function handleeventlogistics(req, res) {
 }
 
 
+async function addlogisticsRequirements(req, res) {
+    let pool;
+    const { details } = req.body;
+    console.log(details)
+    let q = '';
+    try {
+        q = `insert into logistics_details values ('${details}')`;
+        pool = await connectionDb();
+        const response = await pool.request()
+            .query(q);
+        res.status(200).json({
+            success: true,
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+            data: []
+        });
+    } finally {
+        if (pool) {
+            await pool.close();
+        }
+    }
+}
+
+async function getlogisticsRequirements(req, res) {
+    let pool;
+    let q = '';
+    try {
+        q = `Select * from logistics_details`;
+        pool = await connectionDb();
+        const response = await pool.request()
+            .query(q);
+        res.status(200).json({
+            success: true,
+            data: response.recordset
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+            data: []
+        });
+    } finally {
+        if (pool) {
+            await pool.close();
+        }
+    }
+}
+
 module.exports = {
     handleeventlogistics,
+    addlogisticsRequirements,
+    getlogisticsRequirements
 }

@@ -1,6 +1,6 @@
 const express = require('express');
 const eventRouter = express.Router();
-const { getEvents, createEvents, getEvent, getEventsByname, getEventsBySociety, getEventsByStatus, updateEventsByStatus, getEventsOnlyApproved } = require('../controller/eventController');
+const { getEvents, createEvents, getEvent, getEventsByname, getEventsBySociety, getEventsByStatus, updateEventsByStatus, getEventsOnlyApproved, getRejectedEventsBySocietyID } = require('../controller/eventController');
 
 eventRouter.route('/')
     .get(getEvents)
@@ -18,10 +18,13 @@ eventRouter.route('/geteventbysociety/:society_id')
 eventRouter.route('/eventstatus/:status')
     .get(getEventsByStatus)
 
+eventRouter.route('/rejected/:id')
+    .get(getRejectedEventsBySocietyID)
+
 eventRouter.route('/updatestatus')
     .post(updateEventsByStatus)
 
-eventRouter.route('/department/approve/rejected')
+eventRouter.route('/department/approve')
     .get(getEventsOnlyApproved)
 
 module.exports = eventRouter;
