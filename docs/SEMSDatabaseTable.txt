@@ -1,0 +1,100 @@
+//Society Table
+
+CREATE TABLE Society (
+    id INT IDENTITY(1,1) PRIMARY KEY,      
+    S_title VARCHAR(255) NOT NULL,           
+    S_name VARCHAR(255) NOT NULL,            
+    budget DECIMAL(18,2) DEFAULT 0,          
+    S_description VARCHAR(MAX),              
+    S_roles_id INT,                          
+    created_at DATETIME DEFAULT GETDATE()  
+);
+
+
+//Users Table
+CREATE TABLE users (
+    id INT IDENTITY(1,1) PRIMARY KEY,  
+    name VARCHAR(200) NOT NULL,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    gender VARCHAR(50),
+    contact VARCHAR(150),
+    roles VARCHAR(50),
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    societyid INT,
+);
+
+
+//Event-Requistion Table
+
+CREATE TABLE event_requisitions (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    eventName VARCHAR(255) NOT NULL,
+    venue VARCHAR(255) NOT NULL,
+    description VARCHAR(MAX),
+    startDate DATETIME NOT NULL,
+    endDate DATETIME NOT NULL,
+    startTime DATETIME NOT NULL,
+    endTime DATETIME NOT NULL,
+    budget DECIMAL(18,2) DEFAULT 0,
+    resources VARCHAR(MAX),
+    status VARCHAR(50) DEFAULT 'Pending',
+    submissionDate DATETIME NOT NULL,
+    approvedDate DATETIME NULL,
+    rejectionDate DATETIME NULL,
+    notes VARCHAR(MAX),
+    society_id INT,
+    user_id INT,
+);
+
+
+//Assisstant Director Event-Reviews
+
+CREATE TABLE adeventreviews (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    event_id INT NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    reviews VARCHAR(MAX),
+    rejection_date DATE NULL,
+    FOREIGN KEY EVENT_ID REFRENCES event_requisitions(ID)
+);
+
+//Staff Head
+
+CREATE TABLE Staffhead (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    logistics_details VARCHAR(MAX),
+    status VARCHAR(50) NOT NULL,         -- Approved / Rejected
+    eventid INT NOT NULL,                 -- Foreign key to event_requisitions
+    societyid INT NOT NULL,               -- Foreign key to Society table
+    approveds_date DATETIME NULL,             -- Date when approved
+    rejections_date DATETIME NULL,            -- Date when rejected
+    FOREIGN KEY EVENT_ID REFRENCES event_requisitions(ID)
+FOREIGN KEY SOCIETYID REFRENCES SOCIETY(ID)
+);
+
+
+// Logistics Details Table
+
+CREATE TABLE logistics_details (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    details VARCHAR(MAX) NOT NULL,
+);
+
+// It Head Table 
+
+CREATE TABLE ITHEAD (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    TECHNICALREQUIREMENTS VARCHAR(MAX),
+    STATUS VARCHAR(50) NOT NULL,        
+    EVENTID INT NOT NULL,              
+    SOCIETYID INT NOT NULL,           
+    COMPLETEDDATE DATETIME NULL,             
+    REJECTEDDATE DATETIME NULL,               
+    FOREIGN KEY EVENT_ID REFRENCES event_requisitions(ID)
+    FOREIGN KEY SOCIETYID REFRENCES SOCIETY(ID)
+);
+
+ 
+
+
